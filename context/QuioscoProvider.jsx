@@ -1,5 +1,5 @@
-import {useEffect , useState , createContext} from 'react';
-import {  useRouter } from 'next/router'
+import { useEffect, useState, createContext } from 'react';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 
 //este toast es el que llama al Toast
@@ -7,156 +7,135 @@ import { toast } from 'react-toastify';
 
 const QuioscoContext = createContext();
 
-
-const QuioscoProvider = ({children}) => {
-
-
+const QuioscoProvider = ({ children }) => {
     // state
-    const [categorias , setCategorias] = useState([]);
-    const [categoriaActual , setCategoriaActual] = useState({});
-    const [cargando , setCargando] = useState(false);
-    const [producto , setProducto] = useState({});
-    const [modal , setModal] = useState(false);
-    const [pedido , setPedido] = useState([]);
-    const [nombre , setNombre] = useState('');
-    const [total , setTotal] = useState(0);
+    const [categorias, setCategorias] = useState([]);
+    const [categoriaActual, setCategoriaActual] = useState({});
+    const [cargando, setCargando] = useState(false);
+    const [producto, setProducto] = useState({});
+    const [modal, setModal] = useState(false);
+    const [pedido, setPedido] = useState([]);
+    const [nombre, setNombre] = useState('');
+    const [total, setTotal] = useState(0);
 
     //router
 
-    const router = useRouter()
+    const router = useRouter();
 
-
-    const hanldeClickCategoria = categoria => {
-
+    const hanldeClickCategoria = (categoria) => {
         setCategoriaActual(categoria);
-        router.push('/')
+        router.push('/');
+    };
 
-    }
-
-    const hanldeSetProducto = producto => {
-        setProducto(producto)
-    }
-
+    const hanldeSetProducto = (producto) => {
+        setProducto(producto);
+    };
 
     const handelChangeModal = () => {
-        setModal(!modal)
-    }
+        setModal(!modal);
+    };
 
-    const handleCambiarCantidades = id => {
+    const handleCambiarCantidades = (id) => {
+        setModal(!modal);
 
-        setModal(!modal)
+        const cantidadesActualizadas = pedido.filter(
+            (producto) => producto.id === id
+        );
 
-        const cantidadesActualizadas = pedido.filter(producto => producto.id === id)
+        setProducto(cantidadesActualizadas[0]);
+    };
 
-        setProducto( cantidadesActualizadas[0] )
+    const handleEliminarPedido = (id) => {
+        const pedidoActualizado = pedido.filter(
+            (producto) => producto.id !== id
+        );
 
-    }
+        setPedido(pedidoActualizado);
+    };
 
-    const handleEliminarPedido = id => {
+    const handleAgregarPedido = ({ categoriaId, ...producto }) => {
+        //sacando categoriaId e imagen del objeto
 
-        const pedidoActualizado = pedido.filter(producto => producto.id !== id)
-
-        setPedido(pedidoActualizado)
-
-    }
-
-
-    const handleAgregarPedido = ({categoriaId,...producto}) => { //sacando categoriaId e imagen del objeto
-        
-        
-
-        if(pedido.some(bebida => bebida.id === producto.id)) {
-
-            const pedidoActualizado = pedido.map(bebidaState => {
-                if(bebidaState.id === producto.id) {
-                    bebidaState.cantidad = producto.cantidad
+        if (pedido.some((bebida) => bebida.id === producto.id)) {
+            const pedidoActualizado = pedido.map((bebidaState) => {
+                if (bebidaState.id === producto.id) {
+                    bebidaState.cantidad = producto.cantidad;
                 }
 
                 return bebidaState;
-            })
+            });
 
-           setPedido(pedidoActualizado)
-           toast.success('Guardado Correctamente')
-
-
+            setPedido(pedidoActualizado);
+            toast.success('Guardado Correctamente');
         } else {
-            
-            setPedido([...pedido , producto])
-            toast.success('Agregado el pedido')
+            setPedido([...pedido, producto]);
+            toast.success('Agregado el pedido');
         }
 
-        setModal(false)
-    }
+        setModal(false);
+    };
 
-    
-    const colocarOrden = async e => {
-        e.preventDefault()
+    const colocarOrden = async (e) => {
+        e.preventDefault();
 
         try {
-
-            await axios.post('http://localhost:3000/api/ordenes' , {
-                nombre , fecha: Date.now().toString(), total ,pedido  
-            })
+            await axios.post('/api/ordenes', {
+                nombre,
+                fecha: Date.now().toString(),
+                total,
+                pedido,
+            });
 
             //resetear la app
             setCategoriaActual(categorias[0]);
             setPedido([]);
             setNombre('');
-            setTotal(0)
+            setTotal(0);
 
-            toast.success('Pedido realizado correctamente')
+            toast.success('Pedido realizado correctamente');
 
             setTimeout(() => {
-                router.push('/')
+                router.push('/');
             }, 3000);
-        
         } catch (error) {
-            console.log(error)
+            console.log(error);
         }
+    };
 
-    }
-
-  
     //effect
     useEffect(() => {
-
         const consultarCategorias = async () => {
-            
-            setCargando(true)
+            setCargando(true);
 
             try {
-                const url = 'http://localhost:3000/api/categorias';
-        
-                const {data} = await axios(url)
-    
-                setCategorias(data)
-                
+                const url = '/api/categorias';
+
+                const { data } = await axios(url);
+
+                setCategorias(data);
             } catch (error) {
-                console.log(error)
+                console.log(error);
             } finally {
-                setCargando(false)
+                setCargando(false);
             }
-        }   
+        };
 
         consultarCategorias();
-
-    },[])
-
+    }, []);
 
     useEffect(() => {
-
-        setCategoriaActual(categorias[0])
-
-    }, [categorias])
-
+        setCategoriaActual(categorias[0]);
+    }, [categorias]);
 
     useEffect(() => {
-        const nuevoTotal = pedido.reduce((total , producto) => total + (producto.precio * producto.cantidad) , 0 )
-        setTotal(nuevoTotal)
-    }, [pedido])
+        const nuevoTotal = pedido.reduce(
+            (total, producto) => total + producto.precio * producto.cantidad,
+            0
+        );
+        setTotal(nuevoTotal);
+    }, [pedido]);
 
     return (
-
         <QuioscoContext.Provider
             value={{
                 categorias,
@@ -174,18 +153,14 @@ const QuioscoProvider = ({children}) => {
                 nombre,
                 setNombre,
                 colocarOrden,
-                total
-
+                total,
             }}
         >
             {children}
         </QuioscoContext.Provider>
-    )
+    );
+};
 
-}
-
-export {
-    QuioscoProvider
-}
+export { QuioscoProvider };
 
 export default QuioscoContext;
